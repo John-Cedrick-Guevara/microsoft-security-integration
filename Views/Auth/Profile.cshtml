@@ -1,0 +1,97 @@
+@{
+    ViewData["Title"] = "User Profile";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h3 class="mb-0">
+                        <i class="bi bi-person-circle"></i> User Profile
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 text-center mb-4">
+                            <i class="bi bi-person-circle text-primary" style="font-size: 120px;"></i>
+                        </div>
+                        <div class="col-md-9">
+                            <table class="table table-borderless">
+                                <tbody>
+                                    <tr>
+                                        <td class="fw-bold" style="width: 150px;">
+                                            <i class="bi bi-person"></i> Username:
+                                        </td>
+                                        <td>@ViewData["Username"]</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">
+                                            <i class="bi bi-envelope"></i> Email:
+                                        </td>
+                                        <td>@ViewData["Email"]</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">
+                                            <i class="bi bi-shield-check"></i> Role:
+                                        </td>
+                                        <td>
+                                            @{
+                                                var role = ViewData["Role"]?.ToString();
+                                                var badgeClass = role switch
+                                                {
+                                                    "Admin" => "bg-danger",
+                                                    "Moderator" => "bg-warning text-dark",
+                                                    _ => "bg-primary"
+                                                };
+                                            }
+                                            <span class="badge @badgeClass">@role</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold">
+                                            <i class="bi bi-key"></i> User ID:
+                                        </td>
+                                        <td>@ViewData["UserId"]</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            @if (ViewData["Role"]?.ToString() == "Admin")
+                            {
+                                <div class="alert alert-info mt-3">
+                                    <i class="bi bi-star-fill"></i> 
+                                    <strong>Administrator Account</strong><br>
+                                    You have full access to all system features including the admin dashboard.
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-between">
+                        <a href="@Url.Action("Index", "Home")" class="btn btn-primary">
+                            <i class="bi bi-house"></i> Go to Home
+                        </a>
+                        
+                        @if (ViewData["Role"]?.ToString() == "Admin")
+                        {
+                            <a href="@Url.Action("Index", "Admin")" class="btn btn-danger">
+                                <i class="bi bi-gear"></i> Admin Dashboard
+                            </a>
+                        }
+
+                        <form asp-action="Logout" asp-controller="Auth" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-secondary">
+                                <i class="bi bi-box-arrow-right"></i> Logout
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

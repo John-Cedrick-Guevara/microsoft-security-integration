@@ -1,0 +1,181 @@
+﻿@model Secure.Models.UserRegistrationViewModel
+
+@{
+    ViewData["Title"] = "SafeVault - Secure User Registration";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0"><i class="bi bi-shield-lock-fill"></i> SafeVault Registration</h3>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-4">
+                        Create your secure account. All inputs are validated and sanitized to prevent XSS and SQL injection attacks.
+                    </p>
+
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="bi bi-check-circle-fill"></i> @TempData["SuccessMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill"></i> @TempData["ErrorMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    <!-- SECURE FORM: Uses anti-forgery token, validation attributes, and server-side sanitization -->
+                    <form asp-action="Register" asp-controller="Home" method="post" id="registrationForm">
+                        @Html.AntiForgeryToken()
+                        
+                        <div class="mb-3">
+                            <label asp-for="Username" class="form-label">
+                                <i class="bi bi-person-fill"></i> Username
+                            </label>
+                            <input asp-for="Username" 
+                                   class="form-control" 
+                                   placeholder="Enter username (alphanumeric and underscore only)"
+                                   maxlength="50"
+                                   pattern="[a-zA-Z0-9_]{3,50}"
+                                   title="Username must be 3-50 characters and contain only letters, numbers, and underscores"
+                                   required />
+                            <span asp-validation-for="Username" class="text-danger"></span>
+                            <div class="form-text">
+                                <i class="bi bi-info-circle"></i> 3-50 characters, letters, numbers, and underscores only
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Email" class="form-label">
+                                <i class="bi bi-envelope-fill"></i> Email Address
+                            </label>
+                            <input asp-for="Email" 
+                                   type="email"
+                                   class="form-control" 
+                                   placeholder="Enter your email address"
+                                   maxlength="100"
+                                   required />
+                            <span asp-validation-for="Email" class="text-danger"></span>
+                            <div class="form-text">
+                                <i class="bi bi-info-circle"></i> Valid email address required
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-shield-check"></i> Register Securely
+                            </button>
+                        </div>
+                    </form>
+
+                    <hr class="my-4">
+
+                    <div class="alert alert-info mb-0">
+                        <h6 class="alert-heading"><i class="bi bi-shield-fill-check"></i> Security Features Active:</h6>
+                        <ul class="mb-0 small">
+                            <li><strong>XSS Protection:</strong> All inputs are HTML-encoded and validated</li>
+                            <li><strong>SQL Injection Prevention:</strong> Parameterized queries only</li>
+                            <li><strong>Input Validation:</strong> Client and server-side validation</li>
+                            <li><strong>CSRF Protection:</strong> Anti-forgery tokens enabled</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User List Section -->
+            <div class="card shadow mt-4">
+                <div class="card-header bg-secondary text-white">
+                    <h4 class="mb-0"><i class="bi bi-people-fill"></i> Registered Users</h4>
+                </div>
+                <div class="card-body">
+                    <div id="userList">
+                        <p class="text-muted">Loading users...</p>
+                    </div>
+                    <a href="/Home/Users" class="btn btn-outline-primary btn-sm mt-2">
+                        <i class="bi bi-list-ul"></i> View All Users
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        // Client-side validation enhancement (defense in depth)
+        document.getElementById('registrationForm').addEventListener('submit', function(e) {
+            const username = document.querySelector('input[name="Username"]').value;
+            const email = document.querySelector('input[name="Email"]').value;
+            
+            // Additional XSS pattern check on client side
+            const xssPattern = /<script|javascript:|on\w+=/i;
+            
+            if (xssPattern.test(username) || xssPattern.test(email)) {
+                e.preventDefault();
+                alert('Invalid input detected. Please remove any script tags or JavaScript code.');
+                return false;
+            }
+            
+            // SQL injection pattern check on client side
+            const sqlPattern = /(\bSELECT\b|\bINSERT\b|\bUPDATE\b|\bDELETE\b|\bDROP\b|--|'|;)/i;
+            
+            if (sqlPattern.test(username) || sqlPattern.test(email)) {
+                e.preventDefault();
+                alert('Invalid input detected. Please remove any SQL commands.');
+                return false;
+            }
+        });
+
+        // Load recent users via AJAX (demonstrates safe output encoding)
+        window.addEventListener('load', function() {
+            fetch('/Home/GetRecentUsers')
+                .then(response => response.json())
+                .then(users => {
+                    const userList = document.getElementById('userList');
+                    if (users && users.length > 0) {
+                        let html = '<ul class="list-group">';
+                        users.forEach(user => {
+                            // Note: Data is already sanitized server-side
+                            html += `<li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>${escapeHtml(user.username)}</strong>
+                                    <br><small class="text-muted">${escapeHtml(user.email)}</small>
+                                </div>
+                                <span class="badge bg-primary rounded-pill">${user.userId}</span>
+                            </li>`;
+                        });
+                        html += '</ul>';
+                        userList.innerHTML = html;
+                    } else {
+                        userList.innerHTML = '<p class="text-muted">No users registered yet.</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading users:', error);
+                    document.getElementById('userList').innerHTML = '<p class="text-danger">Error loading users.</p>';
+                });
+        });
+
+        // Client-side HTML escaping for additional XSS protection
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+    </script>
+}
